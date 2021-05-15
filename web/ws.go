@@ -27,7 +27,8 @@ type dirMsg struct {
 }
 
 type commandMsg struct {
-	MsgType string
+	MsgType string `json:"msgType"`
+	Name    string `json:"name"`
 }
 
 func (ui *UI) handleWs(conn *websocket.Conn) {
@@ -62,6 +63,31 @@ func (ui *UI) handleWs(conn *websocket.Conn) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
+	ui.sendCurrentDir(jsonE)
+
+	for {
+		msg := &commandMsg{}
+		err := jsonD.Decode(msg)
+		if err != nil {
+			log.Printf("Error parsing websocket message: %s", err.Error())
+			break
+		}
+
+		println(msg.MsgType)
+
+		switch msg.MsgType {
+		case "selectItem":
+			for i, item := range ui.currentDir.Files {
+				if item.Name == msg.Name {
+					ui.currentDir = ui.currentDir.Files[i]
+					ui.sendCurrentDir(jsonE)
+				}
+			}
+		}
+	}
+}
+
+func (ui *UI) sendCurrentDir(jsonE *json.Encoder) {
 	msg := &dirMsg{
 		MsgType: "dir",
 		Path:    ui.currentDirPath,
@@ -74,15 +100,4 @@ func (ui *UI) handleWs(conn *websocket.Conn) {
 		})
 	}
 	jsonE.Encode(msg)
-
-	for {
-		msg := &commandMsg{}
-		err := jsonD.Decode(msg)
-		if err != nil {
-			log.Printf("Error parsing websocket message: %s", err.Error())
-			break
-		}
-
-		println(msg.MsgType)
-	}
 }

@@ -23,7 +23,7 @@ function formatSize(size: number): string {
     }
 }
 
-function connectWs(dataReceivedCallback: Function) {
+function connectWs(dataReceivedCallback: Function): WebSocket {
     let ws = new WebSocket('ws://localhost:8888/ws');
 
     ws.addEventListener('open', function (event) {
@@ -42,6 +42,8 @@ function connectWs(dataReceivedCallback: Function) {
         const data = JSON.parse(event.data);
         dataReceivedCallback(data);
     });
+
+    return ws;
 }
 
 interface AppProps {}
@@ -70,6 +72,7 @@ interface DataRecord {
 
 class App extends React.Component<AppProps, AppState> {
     chart: React.RefObject<any>;
+    ws: WebSocket;
 
     constructor(props: AppProps) {
         super(props);
@@ -81,6 +84,7 @@ class App extends React.Component<AppProps, AppState> {
             items: [],
         };
         this.chart = React.createRef();
+        this.ws = null;
         this.onMessage = this.onMessage.bind(this);
     }
 
@@ -108,7 +112,7 @@ class App extends React.Component<AppProps, AppState> {
 
 
     componentDidMount() {
-        connectWs(this.onMessage);
+        this.ws = connectWs(this.onMessage);
     }
 
     renderStatus() {
@@ -171,6 +175,13 @@ class App extends React.Component<AppProps, AppState> {
                     onClick: (e) => {
                         let index = this.chart.current.chartInstance.active[0]._index;
                         console.log(this.state.items[index].name);
+
+                        if (this.ws) {
+                            this.ws.send(JSON.stringify({
+                                "msgType": "selectItem",
+                                "name": this.state.items[index].name,
+                            }));
+                        }
                      }
                 }}
             />

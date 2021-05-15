@@ -9,10 +9,21 @@ import (
 )
 
 type progressMsg struct {
-	MsgType   string
-	Done      bool
-	ItemCount int
-	TotalSize int64
+	MsgType   string `json:"msgType"`
+	Done      bool   `json:"done"`
+	ItemCount int    `json:"itemCount"`
+	TotalSize int64  `json:"totalSize"`
+}
+
+type dirItem struct {
+	Name string `json:"name"`
+	Size int64  `json:"size"`
+}
+
+type dirMsg struct {
+	MsgType string    `json:"msgType"`
+	Path    string    `json:"path"`
+	Items   []dirItem `json:"items"`
 }
 
 type commandMsg struct {
@@ -50,6 +61,19 @@ func (ui *UI) handleWs(conn *websocket.Conn) {
 
 		time.Sleep(100 * time.Millisecond)
 	}
+
+	msg := &dirMsg{
+		MsgType: "dir",
+		Path:    ui.currentDirPath,
+		Items:   make([]dirItem, 0, len(ui.currentDir.Files)),
+	}
+	for _, item := range ui.currentDir.Files {
+		msg.Items = append(msg.Items, dirItem{
+			Name: item.Name,
+			Size: item.Usage,
+		})
+	}
+	jsonE.Encode(msg)
 
 	for {
 		msg := &commandMsg{}

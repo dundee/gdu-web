@@ -1,6 +1,8 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
-import { Pie } from 'react-chartjs-2';
+import {Pie} from 'react-chartjs-2';
+import {Chart} from 'chart.js';
+import {Tableau20} from 'chartjs-plugin-colorschemes/src/colorschemes/colorschemes.tableau';
 
 const DONE = "done";
 const SCANNING = "scanning";
@@ -32,7 +34,7 @@ function connectWs(dataReceivedCallback: Function) {
         ws.close();
     });
     ws.addEventListener('close', function (event) {
-        dataReceivedCallback({MsgType: "close"});
+        dataReceivedCallback({msgType: "close"});
         setTimeout(() => connectWs(dataReceivedCallback), 1000);
     });
 
@@ -44,42 +46,64 @@ function connectWs(dataReceivedCallback: Function) {
 
 interface AppProps {}
 
+interface Item {
+    name: string
+    size: number
+}
+
 interface AppState {
     status: string
     itemCount: number
     totalSize: number
+    path: string
+    items: Item[]
 }
 
 interface DataRecord {
-    MsgType: string
-    Done: boolean
-    ItemCount: number
-    TotalSize: number
+    msgType: string
+    done: boolean
+    itemCount: number
+    totalSize: number
+    path: string
+    items: Item[]
 }
 
 class App extends React.Component<AppProps, AppState> {
+    chart: React.RefObject<any>;
+
     constructor(props: AppProps) {
         super(props);
-        this.state = {status: null, itemCount: 0, totalSize: 0};
+        this.state = {
+            status: null,
+            itemCount: 0,
+            totalSize: 0,
+            path: "",
+            items: [],
+        };
+        this.chart = React.createRef();
         this.onMessage = this.onMessage.bind(this);
     }
 
     onMessage(data: DataRecord) {
-        if (data.MsgType === "progress") {
+        if (data.msgType === "progress") {
             const status = this.state.status;
 
-            if (data.Done === false && status !== SCANNING) {
+            if (data.done === false && status !== SCANNING) {
                 this.setState({status: SCANNING});
             }
-            if (data.Done === true && status !== DONE) {
+            if (data.done === true && status !== DONE) {
                 this.setState({status: DONE});
             }
 
             this.setState({
-                itemCount: data.ItemCount,
-                totalSize: data.TotalSize,
+                itemCount: data.itemCount,
+                totalSize: data.totalSize,
             });
+        } else if (data.msgType === "dir") {
+            console.log(data);
+            this.setState({path: data.path, items: data.items})
         }
+
     }
 
 
@@ -120,14 +144,34 @@ class App extends React.Component<AppProps, AppState> {
             return "";
         }
 
+        let labels = [];
+        let values = [];
+
+        for (let item of this.state.items) {
+            labels.push(item.name);
+            values.push(item.size);
+        }
+
         return (
             <Pie
+                ref={this.chart}
                 width={500}
                 data={{
+                    labels: labels,
                     datasets: [{
-                        data: [1, 2, 3],
-                        backgroundColor: ["#f00", "#0f0", "#00f"],
+                        data: values,
+                        backgroundColor: Tableau20,
                     }],
+                }}
+                legend={{
+                    position: "chartArea"
+                }}
+                options={{
+                    events: ["click"],
+                    onClick: (e) => {
+                        let index = this.chart.current.chartInstance.active[0]._index;
+                        console.log(this.state.items[index].name);
+                     }
                 }}
             />
         );

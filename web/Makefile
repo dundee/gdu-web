@@ -6,7 +6,7 @@ default:
 		--bundle \
 		--sourcemap \
 		--define:process.env.NODE_ENV=\"production\" \
-		--outfile=static/bundle.js
+		--outfile=static/bundle.js \
 		--minify
 
 watch:

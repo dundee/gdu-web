@@ -10,7 +10,5 @@ require (
 	github.com/rivo/tview v0.0.0-20210217110421-8a8f78a6dd01
 	github.com/spf13/cobra v1.1.3
 	github.com/stretchr/testify v1.6.1
-	golang.org/x/net v0.0.0-20210222171744-9060382bd457 // indirect
-	golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43 // indirect
-	golang.org/x/term v0.0.0-20210220032956-6a3ed077a48d // indirect
+	golang.org/x/net v0.7.0
 )
